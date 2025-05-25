@@ -1,68 +1,65 @@
-from parser import parser
-from lexer import lexer
-from parser import Program, Function, Declaration, Return, BinOp, Number, Var
-
-class IRGenerator:
-    def __init__(self):
-        self.temp_count = 0
-        self.code = []
-        self.symbol_table = {}
-
-    def new_temp(self):
-        self.temp_count += 1
-        return f"t{self.temp_count}"
-
-    def generate(self, node):
-        if isinstance(node, Program):
-            for fn in node.functions:
-                self.generate(fn)
-
-        elif isinstance(node, Function):
-            print(f"\nFunction: {node.name}")
-            for stmt in node.body:
-                self.generate(stmt)
-
-        elif isinstance(node, Declaration):
-            result = self.generate(node.value)
-            self.symbol_table[node.var_name] = result
-            self.code.append(f"{node.var_name} = {result}")
-
-        elif isinstance(node, Return):
-            result = self.generate(node.value)
-            self.code.append(f"return {result}")
-
-        elif isinstance(node, BinOp):
-            left = self.generate(node.left)
-            right = self.generate(node.right)
-            temp = self.new_temp()
-            self.code.append(f"{temp} = {left} {node.op} {right}")
-            return temp
-
-        elif isinstance(node, Number):
-            return str(node.value)
-
-        elif isinstance(node, Var):
-            return node.name
-
-    def print_code(self):
-        for line in self.code:
-            print(line)
-
-# ---------------- Test ---------------------
-if __name__ == '__main__':
-    code = '''
-    int main() {
-        int a = 5;
-        int b = 7;
-        return a + b * 2;
-    }
-    '''
-    ast = parser.parse(code, lexer=lexer)
+import tkinter as tk
+from tkinter import scrolledtext, messagebox
+from nlp_to_c1 import nlp_to_c
+import targetcode
+import tkinter.font as tkFont
+def generate_and_compile():
+    nlp_text = nlp_input.get("1.0", tk.END).strip()
+    if not nlp_text:
+        messagebox.showwarning("Input needed", "Please enter NLP instructions.")
+        return
     
-    from semantic import SemanticAnalyzer
-    SemanticAnalyzer().analyze(ast)  # Validate before IR
+    lines = nlp_text.split('\n')
+    c_code = nlp_to_c(lines)
 
-    ir = IRGenerator()
-    ir.generate(ast)
-    print("\n--- Intermediate Code ---")
-    ir.print_code()
+    try:
+        output = targetcode.run_code_with_compiler(c_code)
+    except Exception as e:
+        messagebox.showerror("Compilation Error", str(e))
+        return
+
+    c_output.delete("1.0", tk.END)
+    c_output.insert(tk.END, c_code)
+
+    output_text.delete("1.0", tk.END)
+    output_text.insert(tk.END, output)
+
+root = tk.Tk()
+root.title("NLP to C Compiler GUI")
+root.geometry("900x700")
+root.resizable(True, True)
+root.configure(bg='lemon chiffon')
+
+my_font = tkFont.Font(family="Helvetica", size=16)
+
+tk.Label(root, text="Enter NLP Instructions (one per line):",bg='light yellow',font=my_font).pack()
+nlp_input = scrolledtext.ScrolledText(root, width=60, height=15 , font=my_font)
+nlp_input.pack(fill='both', expand=False, padx=10, pady=5)
+nlp_input.config(bg='light yellow')
+
+
+
+generate_btn = tk.Button(root, text="Generate and Compile", command=generate_and_compile,bg='yellow',font=my_font)
+generate_btn.pack(pady=10)
+#frame for layout
+frame = tk.Frame(root, bg='lemon chiffon')
+frame.pack(fill='both', expand=True, padx=10, pady=10)
+
+# Left side - Generated C Code
+left_frame = tk.Frame(frame, bg='lemon chiffon')
+left_frame.pack(side='left', fill='both', expand=True)
+
+tk.Label(left_frame, text="Generated C Code:",bg='light yellow',font=my_font).pack()
+c_output = scrolledtext.ScrolledText(left_frame, height=20, width=40, font=my_font)
+c_output.pack(fill='both', expand=True)
+c_output.config(bg='light yellow')
+
+right_frame = tk.Frame(frame, bg='lemon chiffon')
+right_frame.pack(side='left', fill='both', expand=True, padx=(10,0))
+
+tk.Label(right_frame, text="Compiler Output:",bg='light yellow',font=my_font).pack()
+output_text = scrolledtext.ScrolledText(right_frame, height=20, width=40, font=my_font)
+output_text.pack(fill='both', expand=True)
+output_text.config(bg='light yellow')
+
+root.mainloop()
