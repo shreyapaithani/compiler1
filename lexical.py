@@ -2,7 +2,7 @@ import re
 
 
 
-# ------------------ PHASE 1: Lexical Analysis ------------------ #
+# ------------------  Lexical Analysis ------------------ #
 def tokenize(code):
     token_specification = [
         ('NUMBER',   r'\d+'),
