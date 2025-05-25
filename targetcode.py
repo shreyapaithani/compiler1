@@ -1,46 +1,45 @@
-from lexer import lexer
+# targetcode_runner.py
+
+from lexer import lexer 
 from parser import parser
 from semantic import SemanticAnalyzer
 from ir_generator import IRGenerator
 from optimizer import Optimizer
 from executor import Executor
+import io
+import sys
 
-print("enter your c code :")
+def run_code_with_compiler(user_code: str):
+    # Redirect stdout to capture prints from Executor.run()
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = io.StringIO()
 
-lines = []
-while True:
-    line = input()
-    if line.strip() == "":
-        break
-    lines.append(line)
+    try:
+        # Step 1: Lexing
+        lexer.input(user_code)
 
-user_code = "\n".join(lines)
+        # Step 2: Parsing → AST
+        ast = parser.parse(user_code, lexer=lexer)
 
-try:
-    # Parse → AST
-    ast = parser.parse(user_code, lexer=lexer)
+        # Step 3: Semantic Analysis
+        SemanticAnalyzer().analyze(ast)
 
-    # Semantic Check
-    SemanticAnalyzer().analyze(ast)
+        # Step 4: IR Generation
+        ir = IRGenerator()
+        ir.generate(ast)
 
-    # IR Generation
-    ir = IRGenerator()
-    ir.generate(ast)
+        # Step 5: Optimization
+        opt = Optimizer(ir.code)
+        opt.optimize()
 
-    print("\n--- Intermediate Code ---")
-    ir.print_code()
+        # Step 6: Execution
+        result = Executor(opt.get_code)
+        result.run()
+    except Exception as e:
+        print("error", e)
 
-    # Optimization
-    opt = Optimizer(ir.code)
-    opt.optimize()
+    # Restore stdout
+    sys.stdout = old_stdout
 
-    print("\n--- Optimized Code ---")
-    for line in opt.get_code():
-        print(line)
-
-    # Execute optimized code
-    executor = Executor(opt.get_code())
-    executor.run()
-
-except Exception as e:
-    print("error :", e)
+    # Return captured output
+    return mystdout.getvalue()
