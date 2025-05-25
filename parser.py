@@ -1,8 +1,8 @@
 import ply.yacc as yacc
 from lexer import tokens
 
-# AST Node Classes
-class Program:  # Root node
+# ---------- AST Node Classes ----------
+class Program:
     def __init__(self, functions):
         self.functions = functions
 
@@ -35,30 +35,30 @@ class Var:
     def __init__(self, name):
         self.name = name
 
-# --------------------- Grammar Rules ---------------------
+# ---------- Grammar Rules ----------
 
 def p_program(p):
-    '''program : function'''
+    'program : function'
     p[0] = Program([p[1]])
 
 def p_function(p):
-    '''function : INT ID LPAREN RPAREN LBRACE statements RBRACE'''
+    'function : INT ID LPAREN RPAREN LBRACE statements RBRACE'
     p[0] = Function(p[2], p[6])
 
 def p_statements_multiple(p):
-    '''statements : statements statement'''
+    'statements : statements statement'
     p[0] = p[1] + [p[2]]
 
 def p_statements_single(p):
-    '''statements : statement'''
+    'statements : statement'
     p[0] = [p[1]]
 
 def p_statement_declaration(p):
-    '''statement : INT ID ASSIGN expression SEMICOLON'''
+    'statement : INT ID ASSIGN expression SEMICOLON'
     p[0] = Declaration("int", p[2], p[4])
 
 def p_statement_return(p):
-    '''statement : RETURN expression SEMICOLON'''
+    'statement : RETURN expression SEMICOLON'
     p[0] = Return(p[2])
 
 def p_expression_binop(p):
@@ -69,11 +69,11 @@ def p_expression_binop(p):
     p[0] = BinOp(p[1], p[2], p[3])
 
 def p_expression_number(p):
-    '''expression : NUMBER'''
+    'expression : NUMBER'
     p[0] = Number(p[1])
 
 def p_expression_var(p):
-    '''expression : ID'''
+    'expression : ID'
     p[0] = Var(p[1])
 
 def p_error(p):
@@ -82,47 +82,5 @@ def p_error(p):
     else:
         raise SyntaxError("Syntax error at EOF")
 
-
-# --------------------- Build Parser ---------------------
-
+# ---------- Build Parser ----------
 parser = yacc.yacc()
-
-# --------------------- Test Parser ----------------------
-
-if __name__ == '__main__':
-    code = '''
-    int main() {
-        int a = 5;
-        return a + 10;
-    }
-    '''
-    result = parser.parse(code)
-    print("Parsed Successfully!")
-
-    # Debug AST print
-    def print_ast(node, indent=0):
-        prefix = "  " * indent
-        if isinstance(node, Program):
-            print(prefix + "Program")
-            for fn in node.functions:
-                print_ast(fn, indent + 1)
-        elif isinstance(node, Function):
-            print(prefix + f"Function: {node.name}")
-            for stmt in node.body:
-                print_ast(stmt, indent + 1)
-        elif isinstance(node, Declaration):
-            print(prefix + f"Declaration: {node.var_type} {node.var_name} =")
-            print_ast(node.value, indent + 1)
-        elif isinstance(node, Return):
-            print(prefix + "Return")
-            print_ast(node.value, indent + 1)
-        elif isinstance(node, BinOp):
-            print(prefix + f"BinOp: {node.op}")
-            print_ast(node.left, indent + 1)
-            print_ast(node.right, indent + 1)
-        elif isinstance(node, Number):
-            print(prefix + f"Number: {node.value}")
-        elif isinstance(node, Var):
-            print(prefix + f"Var: {node.name}")
-
-    print_ast(result)
