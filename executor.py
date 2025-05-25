@@ -6,7 +6,7 @@ class Executor:
     def eval_expr(self, expr):
         tokens = expr.split()
         if len(tokens) == 1:
-          
+            # Could be variable or number
             val = self.env.get(tokens[0])
             if val is not None:
                 return val
